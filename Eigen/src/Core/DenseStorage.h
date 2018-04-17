@@ -260,7 +260,7 @@ template<typename T, int Size, int _Options> class DenseStorage<T, Size, Dynamic
       , m_cols(other.cols())
     {
       Index size = m_rows*m_cols;
-      EIGEN_INTERNAL_DENSE_STORAGE_CTOR_PLUGIN
+      EIGEN_INTERNAL_DENSE_STORAGE_CTOR_PLUGIN({})
       internal::smart_copy(other.m_data.array,
                            other.m_data.array + other.rows() * other.cols(),
                            m_data.array);
@@ -300,7 +300,7 @@ template<typename T, int Size, int _Cols, int _Options> class DenseStorage<T, Si
       , m_rows(other.rows())
     {
       Index size = m_rows*_Cols;
-      EIGEN_INTERNAL_DENSE_STORAGE_CTOR_PLUGIN
+      EIGEN_INTERNAL_DENSE_STORAGE_CTOR_PLUGIN({})
       internal::smart_copy(other.m_data.array,
                            other.m_data.array + other.rows() * other.cols(),
                            m_data.array);
@@ -338,7 +338,7 @@ template<typename T, int Size, int _Rows, int _Options> class DenseStorage<T, Si
       , m_cols(other.cols())
     {
       Index size = _Rows*m_cols;
-      EIGEN_INTERNAL_DENSE_STORAGE_CTOR_PLUGIN
+      EIGEN_INTERNAL_DENSE_STORAGE_CTOR_PLUGIN({})
       internal::smart_copy(other.m_data.array,
                            other.m_data.array + other.rows() * other.cols(),
                            m_data.array);
