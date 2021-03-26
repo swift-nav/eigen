@@ -254,19 +254,9 @@ template<typename T, int Size, int _Options> class DenseStorage<T, Size, Dynamic
     EIGEN_DEVICE_FUNC DenseStorage() : m_rows(0), m_cols(0) {}
     EIGEN_DEVICE_FUNC explicit DenseStorage(internal::constructor_without_unaligned_array_assert)
       : m_data(internal::constructor_without_unaligned_array_assert()), m_rows(0), m_cols(0) {}
-    EIGEN_DEVICE_FUNC DenseStorage(const DenseStorage& other)
-      : m_data()
-      , m_rows(other.rows())
-      , m_cols(other.cols())
-    {
-      Index size = m_rows*m_cols;
-      EIGEN_INTERNAL_DENSE_STORAGE_CTOR_PLUGIN({})
-      internal::smart_copy(other.m_data.array,
-                           other.m_data.array + other.rows() * other.cols(),
-                           m_data.array);
-    }
-    EIGEN_DEVICE_FUNC DenseStorage& operator=(const DenseStorage& other)
-    {
+    EIGEN_DEVICE_FUNC DenseStorage(const DenseStorage& other) : m_data(other.m_data), m_rows(other.m_rows), m_cols(other.m_cols) {}
+    EIGEN_DEVICE_FUNC DenseStorage& operator=(const DenseStorage& other) 
+    { 
       if (this != &other)
       {
         m_data = other.m_data;
@@ -295,17 +285,8 @@ template<typename T, int Size, int _Cols, int _Options> class DenseStorage<T, Si
     EIGEN_DEVICE_FUNC DenseStorage() : m_rows(0) {}
     EIGEN_DEVICE_FUNC explicit DenseStorage(internal::constructor_without_unaligned_array_assert)
       : m_data(internal::constructor_without_unaligned_array_assert()), m_rows(0) {}
-    EIGEN_DEVICE_FUNC DenseStorage(const DenseStorage& other)
-      : m_data()
-      , m_rows(other.rows())
-    {
-      Index size = m_rows*_Cols;
-      EIGEN_INTERNAL_DENSE_STORAGE_CTOR_PLUGIN({})
-      internal::smart_copy(other.m_data.array,
-                           other.m_data.array + other.rows() * other.cols(),
-                           m_data.array);
-    }
-    EIGEN_DEVICE_FUNC DenseStorage& operator=(const DenseStorage& other)
+    EIGEN_DEVICE_FUNC DenseStorage(const DenseStorage& other) : m_data(other.m_data), m_rows(other.m_rows) {}
+    EIGEN_DEVICE_FUNC DenseStorage& operator=(const DenseStorage& other) 
     {
       if (this != &other)
       {
@@ -333,16 +314,7 @@ template<typename T, int Size, int _Rows, int _Options> class DenseStorage<T, Si
     EIGEN_DEVICE_FUNC DenseStorage() : m_cols(0) {}
     EIGEN_DEVICE_FUNC explicit DenseStorage(internal::constructor_without_unaligned_array_assert)
       : m_data(internal::constructor_without_unaligned_array_assert()), m_cols(0) {}
-    EIGEN_DEVICE_FUNC DenseStorage(const DenseStorage& other)
-      : m_data()
-      , m_cols(other.cols())
-    {
-      Index size = _Rows*m_cols;
-      EIGEN_INTERNAL_DENSE_STORAGE_CTOR_PLUGIN({})
-      internal::smart_copy(other.m_data.array,
-                           other.m_data.array + other.rows() * other.cols(),
-                           m_data.array);
-    }
+    EIGEN_DEVICE_FUNC DenseStorage(const DenseStorage& other) : m_data(other.m_data), m_cols(other.m_cols) {}
     EIGEN_DEVICE_FUNC DenseStorage& operator=(const DenseStorage& other)
     {
       if (this != &other)

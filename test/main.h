@@ -50,6 +50,24 @@
 #endif
 #endif
 
+// Same for cuda_fp16.h
+#if defined(__CUDACC_VER_MAJOR__) && (__CUDACC_VER_MAJOR__ >= 9)
+#define EIGEN_TEST_CUDACC_VER  ((__CUDACC_VER_MAJOR__ * 10000) + (__CUDACC_VER_MINOR__ * 100))
+#elif defined(__CUDACC_VER__)
+#define EIGEN_TEST_CUDACC_VER __CUDACC_VER__
+#else
+#define EIGEN_TEST_CUDACC_VER 0
+#endif
+#define isfinite(X) please_protect_your_isfinite_with_parentheses
+#ifdef M_PI
+#undef M_PI
+#endif
+#define M_PI please_use_EIGEN_PI_instead_of_M_PI
+
+#if EIGEN_TEST_CUDACC_VER >= 70500
+#include <cuda_fp16.h>
+#endif
+
 // To test that all calls from Eigen code to std::min() and std::max() are
 // protected by parenthesis against macro expansion, the min()/max() macros
 // are defined here and any not-parenthesized min/max call will cause a
@@ -172,20 +190,20 @@ namespace Eigen
   // some memory errors.
   #ifdef EIGEN_DEBUG_ASSERTS
 
-    namespace Eigen
+    struct eigen_static_assert_exception
     {
-      namespace internal
-      {
-        static bool push_assert = false;
-      }
-      static std::vector<std::string> eigen_assert_list;
-    }
-    #define eigen_assert(a)                       \
-      if( (!(a)) && (!no_more_assert) )     \
-      { \
-        if(report_on_cerr_on_assert_failure) \
-          std::cerr <<  #a << " " __FILE__ << "(" << __LINE__ << ")\n"; \
-        Eigen::no_more_assert = true;       \
+      eigen_static_assert_exception(void) {}
+      ~eigen_static_assert_exception() { Eigen::no_more_assert = false; }
+    };
+  }
+  // If EIGEN_DEBUG_ASSERTS is defined and if no assertion is triggered while
+  // one should have been, then the list of excecuted assertions is printed out.
+  //
+  // EIGEN_DEBUG_ASSERTS is not enabled by default as it
+  // significantly increases the compilation time
+  // and might even introduce side effects that would hide
+  // some memory errors.
+  #ifdef EIGEN_DEBUG_ASSERTS
         EIGEN_THROW_X(Eigen::eigen_assert_exception()); \
       }                                     \
       else if (Eigen::internal::push_assert)       \
@@ -193,7 +211,7 @@ namespace Eigen
         eigen_assert_list.push_back(std::string(EI_PP_MAKE_STRING(__FILE__) " (" EI_PP_MAKE_STRING(__LINE__) ") : " #a) ); \
       }
 
-    #ifdef EIGEN_EXCEPTIONS
+    namespace Eigen
     #define VERIFY_RAISES_ASSERT(a)                                                   \
       {                                                                               \
         Eigen::no_more_assert = false;                                                \
@@ -259,6 +277,119 @@ namespace Eigen
 #include <Eigen/QR> // required for createRandomPIMatrixOfRank
 
 inline void verify_impl(bool condition, const char *testname, const char *file, int line, const char *condition_as_string)
+    {
+      namespace internal
+      {
+        static bool push_assert = false;
+      }
+      static std::vector<std::string> eigen_assert_list;
+    }
+    #define eigen_assert(a)                       \
+      if( (!(a)) && (!no_more_assert) )     \
+      { \
+        if(report_on_cerr_on_assert_failure) \
+          std::cerr <<  #a << " " __FILE__ << "(" << __LINE__ << ")\n"; \
+        Eigen::no_more_assert = true;       \
+        EIGEN_THROW_X(Eigen::eigen_assert_exception()); \
+      }                                     \
+      else if (Eigen::internal::push_assert)       \
+      {                                     \
+        eigen_assert_list.push_back(std::string(EI_PP_MAKE_STRING(__FILE__) " (" EI_PP_MAKE_STRING(__LINE__) ") : " #a) ); \
+      }
+
+    #ifdef EIGEN_EXCEPTIONS
+    #define VERIFY_RAISES_ASSERT(a)                                                   \
+      {                                                                               \
+        Eigen::no_more_assert = false;                                                \
+        Eigen::eigen_assert_list.clear();                                             \
+        Eigen::internal::push_assert = true;                                          \
+        Eigen::report_on_cerr_on_assert_failure = false;                              \
+        try {                                                                         \
+          a;                                                                          \
+          std::cerr << "One of the following asserts should have been triggered:\n";  \
+          for (uint ai=0 ; ai<eigen_assert_list.size() ; ++ai)                        \
+            std::cerr << "  " << eigen_assert_list[ai] << "\n";                       \
+          VERIFY(Eigen::should_raise_an_assert && # a);                               \
+        } catch (Eigen::eigen_assert_exception) {                                     \
+          Eigen::internal::push_assert = false; VERIFY(true);                         \
+        }                                                                             \
+        Eigen::report_on_cerr_on_assert_failure = true;                               \
+        Eigen::internal::push_assert = false;                                         \
+      }
+    #endif //EIGEN_EXCEPTIONS
+
+  #elif !defined(__CUDACC__) // EIGEN_DEBUG_ASSERTS
+    // see bug 89. The copy_bool here is working around a bug in gcc <= 4.3
+    #define eigen_assert(a) \
+      if( (!Eigen::internal::copy_bool(a)) && (!no_more_assert) )\
+      {                                       \
+        Eigen::no_more_assert = true;         \
+        if(report_on_cerr_on_assert_failure)  \
+          eigen_plain_assert(a);              \
+        else                                  \
+          EIGEN_THROW_X(Eigen::eigen_assert_exception()); \
+      }
+
+    #ifdef EIGEN_EXCEPTIONS
+      #define VERIFY_RAISES_ASSERT(a) {                           \
+        Eigen::no_more_assert = false;                            \
+        Eigen::report_on_cerr_on_assert_failure = false;          \
+        try {                                                     \
+          a;                                                      \
+          VERIFY(Eigen::should_raise_an_assert && # a);           \
+        }                                                         \
+        catch (Eigen::eigen_assert_exception&) { VERIFY(true); }  \
+        Eigen::report_on_cerr_on_assert_failure = true;           \
+      }
+    #endif // EIGEN_EXCEPTIONS
+  #endif // EIGEN_DEBUG_ASSERTS
+
+  #if defined(TEST_CHECK_STATIC_ASSERTIONS) && defined(EIGEN_EXCEPTIONS)
+    #define EIGEN_STATIC_ASSERT(a,MSG) \
+      if( (!Eigen::internal::copy_bool(a)) && (!no_more_assert) )\
+      {                                       \
+        Eigen::no_more_assert = true;         \
+        if(report_on_cerr_on_assert_failure)  \
+          eigen_plain_assert((a) && #MSG);      \
+        else                                  \
+          EIGEN_THROW_X(Eigen::eigen_static_assert_exception()); \
+      }
+    #define VERIFY_RAISES_STATIC_ASSERT(a) {                    \
+      Eigen::no_more_assert = false;                            \
+      Eigen::report_on_cerr_on_assert_failure = false;          \
+      try {                                                     \
+        a;                                                      \
+        VERIFY(Eigen::should_raise_an_assert && # a);           \
+      }                                                         \
+      catch (Eigen::eigen_static_assert_exception&) { VERIFY(true); }  \
+      Eigen::report_on_cerr_on_assert_failure = true;           \
+    }
+  #endif // TEST_CHECK_STATIC_ASSERTIONS
+
+#ifndef VERIFY_RAISES_ASSERT
+  #define VERIFY_RAISES_ASSERT(a) \
+    std::cout << "Can't VERIFY_RAISES_ASSERT( " #a " ) with exceptions disabled\n";
+#endif
+#ifndef VERIFY_RAISES_STATIC_ASSERT
+  #define VERIFY_RAISES_STATIC_ASSERT(a) \
+    std::cout << "Can't VERIFY_RAISES_STATIC_ASSERT( " #a " ) with exceptions disabled\n";
+#endif
+    
+  #if !defined(__CUDACC__)
+  #define EIGEN_USE_CUSTOM_ASSERT
+  #endif
+
+#else // EIGEN_NO_ASSERTION_CHECKING
+
+  #define VERIFY_RAISES_ASSERT(a) {}
+  #define VERIFY_RAISES_STATIC_ASSERT(a) {}
+
+#endif // EIGEN_NO_ASSERTION_CHECKING
+
+#define EIGEN_INTERNAL_DEBUGGING
+#include <Eigen/QR> // required for createRandomPIMatrixOfRank
+
+inline void verify_impl(bool condition, const char *testname, const char *file, int line, const char *condition_as_string)
 {
   if (!condition)
   {
@@ -313,7 +444,7 @@ template<> inline long double test_precision<std::complex<long double> >() { ret
 inline bool test_isApprox(const short& a, const short& b)
 { return internal::isApprox(a, b, test_precision<short>()); }
 inline bool test_isApprox(const unsigned short& a, const unsigned short& b)
-{ return internal::isApprox(a, b, test_precision<unsigned long>()); }
+{ return internal::isApprox(a, b, test_precision<unsigned short>()); }
 inline bool test_isApprox(const unsigned int& a, const unsigned int& b)
 { return internal::isApprox(a, b, test_precision<unsigned int>()); }
 inline bool test_isApprox(const long& a, const long& b)
