@@ -122,8 +122,8 @@ class SPQR : public SparseSolverBase<SPQR<_MatrixType> >
       cholmod_sparse A; 
       A = viewAsCholmod(mat);
       m_rows = matrix.rows();
-      Index col = matrix.cols();
-      m_rank = SuiteSparseQR<Scalar>(m_ordering, pivotThreshold, col, &A, 
+      StorageIndex col = matrix.cols();
+      m_rank = SuiteSparseQR<Scalar>(m_ordering, pivotThreshold, col, &A,
                              &m_cR, &m_E, &m_H, &m_HPinv, &m_HTau, &m_cc);
 
       if (!m_cR)
