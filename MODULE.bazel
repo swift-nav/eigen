@@ -1,9 +1,15 @@
 module(
     name = "eigen",
-    version = "3.3.swiftnav",
+    version = "3.3.1.swiftnav",
     compatibility_level = 1,
 )
 
+bazel_dep(name = "platforms", version = "0.0.9")
 bazel_dep(name = "rules_cc", version = "0.0.17")
 bazel_dep(name = "rules_license", version = "1.0.0")
 bazel_dep(name = "rules_swiftnav", version = "0.1.0")
+
+# Use repo extension to provide MKL dependencies via http_archive
+mkl_ext = use_extension("//extensions:mkl_extension.bzl", "mkl_extension")
+use_repo(mkl_ext, "mkl", "mkl_headers")
+
