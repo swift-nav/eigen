@@ -256,6 +256,11 @@ public:
   /** Copy constructor */
   template<class Derived> EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Quaternion(const QuaternionBase<Derived>& other) { this->Base::operator=(other); }
 
+  /** Copy constructor */
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Quaternion(const Quaternion& other) {
+    this->Base::operator=(other);
+  }
+
   /** Constructs and initializes a quaternion from the angle-axis \a aa */
   EIGEN_DEVICE_FUNC explicit inline Quaternion(const AngleAxisType& aa) { *this = aa; }
 
@@ -270,6 +275,17 @@ public:
   template<typename OtherScalar, int OtherOptions>
   EIGEN_DEVICE_FUNC explicit inline Quaternion(const Quaternion<OtherScalar, OtherOptions>& other)
   { m_coeffs = other.coeffs().template cast<Scalar>(); }
+
+  // We define a copy constructor, which means we don't get an implicit move constructor or assignment operator.
+  /** Default move constructor */
+  EIGEN_DEVICE_FUNC inline Quaternion(Quaternion&& other) noexcept(std::is_nothrow_move_constructible<Scalar>::value)
+      : m_coeffs(std::move(other.coeffs())) {}
+
+  /** Default move assignment operator */
+  EIGEN_DEVICE_FUNC Quaternion& operator=(Quaternion&& other) noexcept(std::is_nothrow_move_assignable<Scalar>::value) {
+    m_coeffs = std::move(other.coeffs());
+    return *this;
+  }
 
   EIGEN_DEVICE_FUNC static Quaternion UnitRandom();
 
