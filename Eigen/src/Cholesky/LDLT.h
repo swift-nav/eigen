@@ -13,6 +13,8 @@
 #ifndef EIGEN_LDLT_H
 #define EIGEN_LDLT_H
 
+#include <iostream>
+
 namespace Eigen {
 
 namespace internal {
@@ -286,15 +288,60 @@ template<typename _MatrixType, int _UpLo> class LDLT
 
 namespace internal {
 
-template<int UpLo> struct ldlt_inplace;
+// Reference for the algorithm: Davis and Hager, "Multiple Rank
+// Modifications of a Sparse Cholesky Factorization" (Algorithm 1)
+// Trivial rearrangements of their computations (Timothy E. Holy)
+// allow their algorithm to work for rank-1 updates even if the
+// original matrix is not of full rank.
+// Here only rank-1 updates are implemented, to reduce the
+// requirement for intermediate storage and improve accuracy
+template<typename MatrixType, typename VectorType>
+static bool ldlt_rank_update_lower(MatrixType& mat, MatrixBase<VectorType>& w, const typename MatrixType::RealScalar& sigma=1)
+{
+  using numext::isfinite;
+  typedef typename MatrixType::Scalar Scalar;
+  typedef typename MatrixType::RealScalar RealScalar;
 
-template<> struct ldlt_inplace<Lower>
+  const Index size = mat.rows();
+  eigen_assert(mat.cols() == size && w.size()==size);
+
+  RealScalar alpha = 1;
+
+  // Apply the update
+  for (Index j = 0; j < size; j++)
+  {
+    // Check for termination due to an original decomposition of low-rank
+    if (!(isfinite)(alpha))
+      break;
+
+    // Update the diagonal terms
+    RealScalar dj = numext::real(mat.coeff(j,j));
+    Scalar wj = w.coeff(j);
+    RealScalar swj2 = sigma*numext::abs2(wj);
+    RealScalar gamma = dj*alpha + swj2;
+
+    mat.coeffRef(j,j) += swj2/alpha;
+    alpha += swj2/dj;
+
+
+    // Update the terms of L
+    Index rs = size-j-1;
+    w.tail(rs) -= wj * mat.col(j).tail(rs);
+    if(gamma != 0)
+      mat.col(j).tail(rs) += (sigma*numext::conj(wj)/gamma)*w.tail(rs);
+  }
+  return true;
+}
+
+template<typename Scalar, int UpLo> struct ldlt_inplace;
+template<typename Scalar, int UpLo> struct ldlt_inplace_native;
+
+template<typename Scalar> struct ldlt_inplace<Scalar, Lower>
 {
   template<typename MatrixType, typename TranspositionType, typename Workspace>
-  static bool unblocked(MatrixType& mat, TranspositionType& transpositions, Workspace& temp, SignMatrix& sign)
+  static ComputationInfo unblocked(MatrixType& mat, TranspositionType& transpositions, Workspace& temp, SignMatrix& sign)
   {
     using std::abs;
-    typedef typename MatrixType::Scalar Scalar;
     typedef typename MatrixType::RealScalar RealScalar;
     typedef typename TranspositionType::StorageIndex IndexType;
     eigen_assert(mat.rows()==mat.cols());
@@ -308,7 +355,7 @@ template<> struct ldlt_inplace<Lower>
       if (numext::real(mat.coeff(0,0)) > static_cast<RealScalar>(0) ) sign = PositiveSemiDef;
       else if (numext::real(mat.coeff(0,0)) < static_cast<RealScalar>(0)) sign = NegativeSemiDef;
       else sign = ZeroSign;
-      return true;
+      return Success;
     }
 
     for (Index k = 0; k < size; ++k)
@@ -371,7 +418,7 @@ template<> struct ldlt_inplace<Lower>
           transpositions.coeffRef(j) = IndexType(j);
           ret = ret && (mat.col(j).tail(size-j-1).array()==Scalar(0)).all();
         }
-        return ret;
+        return ret ? Success : InvalidInput;
       }
 
       if((rs>0) && pivot_is_valid)
@@ -390,52 +437,7 @@ template<> struct ldlt_inplace<Lower>
       }
     }
 
-    return ret;
-  }
-
-  // Reference for the algorithm: Davis and Hager, "Multiple Rank
-  // Modifications of a Sparse Cholesky Factorization" (Algorithm 1)
-  // Trivial rearrangements of their computations (Timothy E. Holy)
-  // allow their algorithm to work for rank-1 updates even if the
-  // original matrix is not of full rank.
-  // Here only rank-1 updates are implemented, to reduce the
-  // requirement for intermediate storage and improve accuracy
-  template<typename MatrixType, typename WDerived>
-  static bool updateInPlace(MatrixType& mat, MatrixBase<WDerived>& w, const typename MatrixType::RealScalar& sigma=1)
-  {
-    using numext::isfinite;
-    typedef typename MatrixType::Scalar Scalar;
-    typedef typename MatrixType::RealScalar RealScalar;
-
-    const Index size = mat.rows();
-    eigen_assert(mat.cols() == size && w.size()==size);
-
-    RealScalar alpha = 1;
-
-    // Apply the update
-    for (Index j = 0; j < size; j++)
-    {
-      // Check for termination due to an original decomposition of low-rank
-      if (!(isfinite)(alpha))
-        break;
-
-      // Update the diagonal terms
-      RealScalar dj = numext::real(mat.coeff(j,j));
-      Scalar wj = w.coeff(j);
-      RealScalar swj2 = sigma*numext::abs2(wj);
-      RealScalar gamma = dj*alpha + swj2;
-
-      mat.coeffRef(j,j) += swj2/alpha;
-      alpha += swj2/dj;
-
-
-      // Update the terms of L
-      Index rs = size-j-1;
-      w.tail(rs) -= wj * mat.col(j).tail(rs);
-      if(gamma != 0)
-        mat.col(j).tail(rs) += (sigma*numext::conj(wj)/gamma)*w.tail(rs);
-    }
-    return true;
+    return ret ? Success : InvalidInput;
   }
 
   template<typename MatrixType, typename TranspositionType, typename Workspace, typename WType>
@@ -444,24 +446,129 @@ template<> struct ldlt_inplace<Lower>
     // Apply the permutation to the input w
     tmp = transpositions * w;
 
-    return ldlt_inplace<Lower>::updateInPlace(mat,tmp,sigma);
+    return Eigen::internal::ldlt_rank_update_lower(mat,tmp,sigma);
   }
 };
 
-template<> struct ldlt_inplace<Upper>
+template<typename Scalar> struct ldlt_inplace<Scalar, Upper>
 {
   template<typename MatrixType, typename TranspositionType, typename Workspace>
-  static EIGEN_STRONG_INLINE bool unblocked(MatrixType& mat, TranspositionType& transpositions, Workspace& temp, SignMatrix& sign)
+  static EIGEN_STRONG_INLINE ComputationInfo unblocked(MatrixType& mat, TranspositionType& transpositions, Workspace& temp, SignMatrix& sign)
   {
     Transpose<MatrixType> matt(mat);
-    return ldlt_inplace<Lower>::unblocked(matt, transpositions, temp, sign);
+    return ldlt_inplace<Scalar, Lower>::unblocked(matt, transpositions, temp, sign);
   }
 
   template<typename MatrixType, typename TranspositionType, typename Workspace, typename WType>
-  static EIGEN_STRONG_INLINE bool update(MatrixType& mat, TranspositionType& transpositions, Workspace& tmp, WType& w, const typename MatrixType::RealScalar& sigma=1)
+  static EIGEN_STRONG_INLINE ComputationInfo update(MatrixType& mat, TranspositionType& transpositions, Workspace& tmp, WType& w, const typename MatrixType::RealScalar& sigma=1)
   {
     Transpose<MatrixType> matt(mat);
-    return ldlt_inplace<Lower>::update(matt, transpositions, tmp, w.conjugate(), sigma);
+    return ldlt_inplace<Scalar, Lower>::update(matt, transpositions, tmp, w.conjugate(), sigma);
+  }
+};
+
+template<typename Scalar> struct ldlt_inplace_native<Scalar, Lower>
+{
+  template<typename MatrixType, typename TranspositionType, typename Workspace>
+  static ComputationInfo unblocked(MatrixType& mat, TranspositionType& transpositions, Workspace& temp, SignMatrix& sign)
+  {
+    using std::abs;
+    typedef typename MatrixType::RealScalar RealScalar;
+    typedef typename TranspositionType::StorageIndex IndexType;
+    eigen_assert(mat.rows()==mat.cols());
+    const Index size = mat.rows();
+    bool found_zero_pivot = false;
+    bool ret = true;
+
+    if (size <= 1)
+    {
+      transpositions.setIdentity();
+      if (numext::real(mat.coeff(0,0)) > static_cast<RealScalar>(0) ) sign = PositiveSemiDef;
+      else if (numext::real(mat.coeff(0,0)) < static_cast<RealScalar>(0)) sign = NegativeSemiDef;
+      else sign = ZeroSign;
+      return Success;
+    }
+
+    for (Index k = 0; k < size; ++k)
+    {
+      // Find largest diagonal element
+      Index index_of_biggest_in_corner;
+      mat.diagonal().tail(size-k).cwiseAbs().maxCoeff(&index_of_biggest_in_corner);
+      index_of_biggest_in_corner += k;
+
+      transpositions.coeffRef(k) = IndexType(index_of_biggest_in_corner);
+      if(k != index_of_biggest_in_corner)
+      {
+        // apply the transposition while taking care to consider only
+        // the lower triangular part
+        Index s = size-index_of_biggest_in_corner-1; // trailing size after the biggest element
+        mat.row(k).head(k).swap(mat.row(index_of_biggest_in_corner).head(k));
+        mat.col(k).tail(s).swap(mat.col(index_of_biggest_in_corner).tail(s));
+        std::swap(mat.coeffRef(k,k),mat.coeffRef(index_of_biggest_in_corner,index_of_biggest_in_corner));
+        for(Index i=k+1;i<index_of_biggest_in_corner;++i)
+        {
+          Scalar tmp = mat.coeffRef(i,k);
+          mat.coeffRef(i,k) = numext::conj(mat.coeffRef(index_of_biggest_in_corner,i));
+          mat.coeffRef(index_of_biggest_in_corner,i) = numext::conj(tmp);
+        }
+        if(NumTraits<Scalar>::IsComplex)
+          mat.coeffRef(index_of_biggest_in_corner,k) = numext::conj(mat.coeff(index_of_biggest_in_corner,k));
+      }
+
+      // partition the matrix:
+      //       A00 |  -  |  -
+      // lu  = A10 | A11 |  -
+      //       A20 | A21 | A22
+      Index rs = size - k - 1;
+      Block<MatrixType,Dynamic,1> A21(mat,k+1,k,rs,1);
+      Block<MatrixType,1,Dynamic> A10(mat,k,0,1,k);
+      Block<MatrixType,Dynamic,Dynamic> A20(mat,k+1,0,rs,k);
+
+      if(k>0)
+      {
+        temp.head(k) = mat.diagonal().real().head(k).asDiagonal() * A10.adjoint();
+        mat.coeffRef(k,k) -= (A10 * temp.head(k)).value();
+        if(rs>0)
+          A21.noalias() -= A20 * temp.head(k);
+      }
+
+      // In some previous versions of Eigen (e.g., 3.2.1), the scaling was omitted if the pivot
+      // was smaller than the cutoff value. However, since LDLT is not rank-revealing
+      // we should only make sure that we do not introduce INF or NaN values.
+      // Remark that LAPACK also uses 0 as the cutoff value.
+      RealScalar realAkk = numext::real(mat.coeffRef(k,k));
+      bool pivot_is_valid = (abs(realAkk) > RealScalar(0));
+
+      if(k==0 && !pivot_is_valid)
+      {
+        // The entire diagonal is zero, there is nothing more to do
+        // except filling the transpositions, and checking whether the matrix is zero.
+        sign = ZeroSign;
+        for(Index j = 0; j<size; ++j)
+        {
+          transpositions.coeffRef(j) = IndexType(j);
+          ret = ret && (mat.col(j).tail(size-j-1).array()==Scalar(0)).all();
+        }
+        return ret ? Success : InvalidInput;
+      }
+
+      if((rs>0) && pivot_is_valid)
+        A21 /= realAkk;
+
+      if(found_zero_pivot && pivot_is_valid) ret = false; // factorization failed
+      else if(!pivot_is_valid) found_zero_pivot = true;
+
+      if (sign == PositiveSemiDef) {
+        if (realAkk < static_cast<RealScalar>(0)) sign = Indefinite;
+      } else if (sign == NegativeSemiDef) {
+        if (realAkk > static_cast<RealScalar>(0)) sign = Indefinite;
+      } else if (sign == ZeroSign) {
+        if (realAkk > static_cast<RealScalar>(0)) sign = PositiveSemiDef;
+        else if (realAkk < static_cast<RealScalar>(0)) sign = NegativeSemiDef;
+      }
+    }
+
+    return ret ? Success : InvalidInput;
   }
 };
 
@@ -471,6 +578,8 @@ template<typename MatrixType> struct LDLT_Traits<MatrixType,Lower>
   typedef const TriangularView<const typename MatrixType::AdjointReturnType, UnitUpper> MatrixU;
   static inline MatrixL getL(const MatrixType& m) { return MatrixL(m); }
   static inline MatrixU getU(const MatrixType& m) { return MatrixU(m.adjoint()); }
+  // static bool inplace_decomposition(MatrixType &m) {
+  //   return ldlt_inplace<typename MatrixType::Scalar, Lower>::unblocked(m) == -1; }    
 };
 
 template<typename MatrixType> struct LDLT_Traits<MatrixType,Upper>
@@ -479,6 +588,8 @@ template<typename MatrixType> struct LDLT_Traits<MatrixType,Upper>
   typedef const TriangularView<const MatrixType, UnitUpper> MatrixU;
   static inline MatrixL getL(const MatrixType& m) { return MatrixL(m.adjoint()); }
   static inline MatrixU getU(const MatrixType& m) { return MatrixU(m); }
+  // static bool inplace_decomposition(MatrixType &m) {
+  //   return ldlt_inplace<typename MatrixType::Scalar, Upper>::unblocked(m) == -1; }    
 };
 
 } // end namespace internal
@@ -514,7 +625,7 @@ LDLT<MatrixType,_UpLo>& LDLT<MatrixType,_UpLo>::compute(const EigenBase<InputTyp
   m_temporary.resize(size);
   m_sign = internal::ZeroSign;
 
-  m_info = internal::ldlt_inplace<UpLo>::unblocked(m_matrix, m_transpositions, m_temporary, m_sign) ? Success : NumericalIssue;
+  m_info = internal::ldlt_inplace<typename MatrixType::Scalar, UpLo>::unblocked(m_matrix, m_transpositions, m_temporary, m_sign);
 
   m_isInitialized = true;
   return *this;
@@ -547,7 +658,7 @@ LDLT<MatrixType,_UpLo>& LDLT<MatrixType,_UpLo>::rankUpdate(const MatrixBase<Deri
     m_isInitialized = true;
   }
 
-  internal::ldlt_inplace<UpLo>::update(m_matrix, m_transpositions, m_temporary, w, sigma);
+  internal::ldlt_inplace<RealScalar, UpLo>::update(m_matrix, m_transpositions, m_temporary, w, sigma);
 
   return *this;
 }

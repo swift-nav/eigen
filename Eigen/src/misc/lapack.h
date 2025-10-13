@@ -8,6 +8,10 @@ extern "C"
 {
 #endif
 
+#ifdef EIGEN_USE_LAPACKE
+#  include "lapacke.h"   // use vendor C prototypes
+#else
+
 int BLASFUNC(csymv) (const char *, const int *, const float  *, const float  *, const int *, const float  *, const int *, const float  *, float  *, const int *);
 int BLASFUNC(zsymv) (const char *, const int *, const double *, const double *, const int *, const double *, const int *, const double *, double *, const int *);
 int BLASFUNC(xsymv) (const char *, const int *, const double *, const double *, const int *, const double *, const int *, const double *, double *, const int *);
@@ -144,6 +148,8 @@ int BLASFUNC(qpotri)(char *, int *, double *, int *, int *);
 int BLASFUNC(cpotri)(char *, int *, float  *, int *, int *);
 int BLASFUNC(zpotri)(char *, int *, double *, int *, int *);
 int BLASFUNC(xpotri)(char *, int *, double *, int *, int *);
+
+#endif
 
 #ifdef __cplusplus
 }

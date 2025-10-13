@@ -54,11 +54,11 @@
 // protected by parenthesis against macro expansion, the min()/max() macros
 // are defined here and any not-parenthesized min/max call will cause a
 // compiler error.
-#define min(A,B) please_protect_your_min_with_parentheses
-#define max(A,B) please_protect_your_max_with_parentheses
-#define isnan(X) please_protect_your_isnan_with_parentheses
-#define isinf(X) please_protect_your_isinf_with_parentheses
-#define isfinite(X) please_protect_your_isfinite_with_parentheses
+// #define min(A,B) please_protect_your_min_with_parentheses
+// #define max(A,B) please_protect_your_max_with_parentheses
+// #define isnan(X) please_protect_your_isnan_with_parentheses
+// #define isinf(X) please_protect_your_isinf_with_parentheses
+// #define isfinite(X) please_protect_your_isfinite_with_parentheses
 #ifdef M_PI
 #undef M_PI
 #endif

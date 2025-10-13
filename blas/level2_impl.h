@@ -144,7 +144,7 @@ int EIGEN_BLAS_FUNC(trsv)(const char *uplo, const char *opa, const char *diag, c
 
 int EIGEN_BLAS_FUNC(trmv)(const char *uplo, const char *opa, const char *diag, const int *n, const RealScalar *pa, const int *lda, RealScalar *pb, const int *incb)
 {
-  typedef void (*functype)(int, int, const Scalar *, int, const Scalar *, int, Scalar *, int, const Scalar&);
+  typedef void (*functype)(int, int, const Scalar *, int, const Scalar *, int, Scalar *, int, Scalar);
   static const functype func[16] = {
     // array index: NOTR  | (UP << 2) | (NUNIT << 3)
     (internal::triangular_matrix_vector_product<int,Upper|0,       Scalar,false,Scalar,false,ColMajor>::run),

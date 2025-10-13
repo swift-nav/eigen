@@ -33,6 +33,7 @@
 #ifdef EIGEN_USE_LAPACKE
 #include "src/misc/lapacke.h"
 #include "src/Cholesky/LLT_LAPACKE.h"
+#include "src/Cholesky/LDLT_LAPACKE.h"
 #endif
 
 #include "src/Core/util/ReenableStupidWarnings.h"
