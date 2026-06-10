@@ -53,11 +53,11 @@ cc_library(
         "$(location @mkl//:libmkl_core.a)",
         "$(location @mkl//:libmkl_gnu_thread.a)",
         "-Wl,--end-group",
-        "-l:libgomp.a",
     ],
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [
+        "@llvm-project//openmp:libomp",
         "@mkl_headers",
     ],
 )
