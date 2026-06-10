@@ -42,7 +42,6 @@ cc_library(
         "$(location @mkl//:libmkl_core.a)",
         "$(location @mkl//:libmkl_gnu_thread.a)",
         "-Wl,--end-group",
-        "-l:libgomp.a",
     ],
     linkstatic = 1,
     visibility = ["//visibility:public"],
@@ -50,6 +49,11 @@ cc_library(
         ":libmkl_core",
         ":libmkl_gnu_thread",
         ":libmkl_intel_lp64",
+        # GNU-ABI OpenMP runtime for libmkl_gnu_thread.a. The hermetic LLVM
+        # toolchain provides no system libgomp; its libomp implements the same
+        # GOMP_* symbols, so model the dependency explicitly instead of the
+        # former `-l:libgomp.a` linkopt that relied on a sysroot search path.
+        "@llvm-project//openmp:libomp",
         "@mkl_headers",
     ],
     alwayslink = 1,
