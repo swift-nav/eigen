@@ -28,9 +28,20 @@ cc_import(
     visibility = ["//visibility:public"],
 )
 
+# MKL must be linked as a re-scanned archive group so the linker resolves the
+# libraries' circular references while pulling in only the objects actually
+# referenced. The archives are intentionally NOT placed in `srcs`/`deps` and the
+# target is NOT `alwayslink`: with newer rules_cc (Bazel 9) that makes the
+# precompiled archives link with `--whole-archive`, which drags in the
+# distributed-memory cluster FFT wrappers (Dfti*DM) and the MPI wrapper object.
+# Those reference symbols from libmkl_cdft_core.a and the BLACS/MPI libraries
+# that this single-node link does not include, producing undefined-symbol link
+# errors (e.g. mkl_cdft_*, DftiComputeForwardDM, MKLMPI_Get_wrappers). The
+# `--start-group` link line below is Intel's documented way to link the static
+# MKL libraries.
 cc_library(
     name = "mkl",
-    srcs = [
+    additional_linker_inputs = [
         "@mkl//:libmkl_core.a",
         "@mkl//:libmkl_gnu_thread.a",
         "@mkl//:libmkl_intel_lp64.a",
@@ -47,10 +58,6 @@ cc_library(
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [
-        ":libmkl_core",
-        ":libmkl_gnu_thread",
-        ":libmkl_intel_lp64",
         "@mkl_headers",
     ],
-    alwayslink = 1,
 )
