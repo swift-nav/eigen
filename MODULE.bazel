@@ -4,10 +4,16 @@ module(
     compatibility_level = 1,
 )
 
+bazel_dep(name = "bazel_skylib", version = "1.9.0")
 bazel_dep(name = "platforms", version = "0.0.9")
 bazel_dep(name = "rules_cc", version = "0.2.18")
 bazel_dep(name = "rules_license", version = "1.0.0")
 bazel_dep(name = "rules_swiftnav", version = "0.1.0")
+
+bazel_dep(name = "llvm", version = "0.8.6")
+
+llvm = use_extension("@llvm//extensions:llvm.bzl", "llvm")
+use_repo(llvm, "llvm-project")
 
 # Use repo extension to provide MKL dependencies via http_archive
 mkl_ext = use_extension("//extensions:mkl_extension.bzl", "mkl_extension")
