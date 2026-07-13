@@ -10,7 +10,7 @@ bazel_dep(name = "rules_cc", version = "0.2.18")
 bazel_dep(name = "rules_license", version = "1.0.0")
 bazel_dep(name = "rules_swiftnav", version = "0.1.0")
 
-bazel_dep(name = "llvm", version = "0.8.6")
+bazel_dep(name = "llvm", version = "0.8.11")
 
 llvm = use_extension("@llvm//extensions:llvm.bzl", "llvm")
 use_repo(llvm, "llvm-project")
