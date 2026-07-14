@@ -28,14 +28,7 @@ cc_import(
     visibility = ["//visibility:public"],
 )
 
-# The hermetic LLVM OpenMP runtime's kmp_atomic.cpp references the long-double
-# _Complex builtins __mulxc3/__divxc3 (via __kmpc_atomic_cmplx10_*). For C++
-# links these come from the clang driver's compiler-rt builtins archive, but
-# rustc-driven links pass -nodefaultlibs and supply Rust's own compiler_builtins,
-# which implements only the double _Complex variants (__muldc3/__divdc3). Wrap
-# compiler-rt's builtins archive so it can be linked (the raw target does not
-# expose CcInfo) and place it after libomp in deps so the missing objects
-# resolve without whole-archiving (avoids clashing with Rust's __muldc3).
+# Use the runtime symbols out of @llvm and provide them as cc_imported library
 cc_import(
     name = "compiler_rt_builtins",
     static_library = "@llvm//runtimes/compiler-rt:clang_rt.builtins.static",
