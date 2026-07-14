@@ -8,19 +8,7 @@
 # EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
 
-load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 load("@rules_cc//cc:defs.bzl", "cc_import", "cc_library")
-
-bool_flag(
-    name = "hermetic_build",
-    build_setting_default = False,
-)
-
-config_setting(
-    name = "use_hermetic_openmp",
-    flag_values = {":hermetic_build": "True"},
-    visibility = ["//visibility:public"],
-)
 
 cc_import(
     name = "libmkl_core",
@@ -37,6 +25,13 @@ cc_import(
 cc_import(
     name = "libmkl_gnu_thread",
     static_library = "libmkl_gnu_thread.a",
+    visibility = ["//visibility:public"],
+)
+
+# Use the runtime symbols out of @llvm and provide them as cc_imported library
+cc_import(
+    name = "compiler_rt_builtins",
+    static_library = "@llvm//runtimes/compiler-rt:clang_rt.builtins.static",
     visibility = ["//visibility:public"],
 )
 
@@ -66,7 +61,7 @@ cc_library(
         "$(location @mkl//:libmkl_gnu_thread.a)",
         "-Wl,--end-group",
     ] + select({
-        ":use_hermetic_openmp": [],
+        "@rules_swiftnav//third_party:_use_hermetic_llvm": [],
         "//conditions:default": ["-l:libgomp.a"],
     }),
     linkstatic = 1,
@@ -74,7 +69,10 @@ cc_library(
     deps = [
         "@mkl_headers",
     ] + select({
-        ":use_hermetic_openmp": ["@llvm-project//openmp:libomp"],
+        "@rules_swiftnav//third_party:_use_hermetic_llvm": [
+            "@llvm-project//openmp:libomp",
+            ":compiler_rt_builtins",
+        ],
         "//conditions:default": [],
     }),
 )
