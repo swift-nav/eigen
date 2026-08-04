@@ -341,6 +341,7 @@ using std::ptrdiff_t;
   * \endcode
   */
 
+// IWYU pragma: begin_exports
 #include "src/Core/util/Constants.h"
 #include "src/Core/util/Meta.h"
 #include "src/Core/util/ForwardDeclarations.h"
@@ -511,6 +512,7 @@ using std::ptrdiff_t;
 
 #include "src/Core/GlobalFunctions.h"
 
+// IWYU pragma: end_exports
 #include "src/Core/util/ReenableStupidWarnings.h"
 
 #endif // EIGEN_CORE_H

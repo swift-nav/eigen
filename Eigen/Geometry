@@ -33,6 +33,7 @@
   * \endcode
   */
 
+// IWYU pragma: begin_exports
 #include "src/Geometry/OrthoMethods.h"
 #include "src/Geometry/EulerAngles.h"
 
@@ -55,6 +56,7 @@
 #include "src/Geometry/arch/Geometry_SSE.h"
 #endif
 
+// IWYU pragma: end_exports
 #include "src/Core/util/ReenableStupidWarnings.h"
 
 #endif // EIGEN_GEOMETRY_MODULE_H

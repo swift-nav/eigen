@@ -23,6 +23,7 @@
 // Ordering interface
 #include "OrderingMethods"
 
+// IWYU pragma: begin_exports
 #include "src/SparseLU/SparseLU_gemm_kernel.h"
 
 #include "src/SparseLU/SparseLU_Structs.h"
@@ -42,5 +43,6 @@
 #include "src/SparseLU/SparseLU_pruneL.h"
 #include "src/SparseLU/SparseLU_Utils.h"
 #include "src/SparseLU/SparseLU.h"
+// IWYU pragma: end_exports
 
 #endif // EIGEN_SPARSELU_MODULE_H

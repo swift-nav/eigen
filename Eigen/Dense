@@ -1,3 +1,4 @@
+// IWYU pragma: begin_exports
 #include "Core"
 #include "LU"
 #include "Cholesky"
@@ -5,3 +6,4 @@
 #include "SVD"
 #include "Geometry"
 #include "Eigenvalues"
+// IWYU pragma: end_exports

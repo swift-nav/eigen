@@ -23,6 +23,7 @@
   * \endcode
   */
 
+// IWYU pragma: begin_exports
 #include "src/misc/Kernel.h"
 #include "src/misc/Image.h"
 #include "src/LU/FullPivLU.h"
@@ -40,6 +41,7 @@
   #include "src/LU/arch/Inverse_SSE.h"
 #endif
 
+// IWYU pragma: end_exports
 #include "src/Core/util/ReenableStupidWarnings.h"
 
 #endif // EIGEN_LU_MODULE_H
