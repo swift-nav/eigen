@@ -28,7 +28,9 @@
   *
   */
 
+// IWYU pragma: begin_exports
 #include "src/CholmodSupport/CholmodSupport.h"
 #include "src/SPQRSupport/SuiteSparseQRSupport.h"
+// IWYU pragma: end_exports
 
 #endif

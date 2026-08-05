@@ -34,12 +34,14 @@
 #error The SparseCholesky module has nothing to offer in MPL2 only mode
 #endif
 
+// IWYU pragma: begin_exports
 #include "src/SparseCholesky/SimplicialCholesky.h"
 
 #ifndef EIGEN_MPL2_ONLY
 #include "src/SparseCholesky/SimplicialCholesky_impl.h"
 #endif
 
+// IWYU pragma: end_exports
 #include "src/Core/util/ReenableStupidWarnings.h"
 
 #endif // EIGEN_SPARSECHOLESKY_MODULE_H

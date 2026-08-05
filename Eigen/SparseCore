@@ -33,6 +33,7 @@
   * This module depends on: Core.
   */
 
+// IWYU pragma: begin_exports
 #include "src/SparseCore/SparseUtil.h"
 #include "src/SparseCore/SparseMatrixBase.h"
 #include "src/SparseCore/SparseAssign.h"
@@ -63,6 +64,7 @@
 #include "src/SparseCore/SparseFuzzy.h"
 #include "src/SparseCore/SparseSolverBase.h"
 
+// IWYU pragma: end_exports
 #include "src/Core/util/ReenableStupidWarnings.h"
 
 #endif // EIGEN_SPARSECORE_MODULE_H

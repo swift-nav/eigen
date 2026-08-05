@@ -28,8 +28,10 @@ extern "C" {
   */
 
 
+// IWYU pragma: begin_exports
 #include "src/MetisSupport/MetisSupport.h"
 
+// IWYU pragma: end_exports
 #include "src/Core/util/ReenableStupidWarnings.h"
 
 #endif // EIGEN_METISSUPPORT_MODULE_H
