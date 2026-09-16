@@ -23,16 +23,11 @@
     \endcode
   */
 
-// IWYU pragma: begin_exports
 #include "SparseCore"
 #include "OrderingMethods"
-#ifndef EIGEN_MPL2_ONLY
 #include "SparseCholesky"
-#endif
 #include "SparseLU"
 #include "SparseQR"
 #include "IterativeLinearSolvers"
-// IWYU pragma: end_exports
 
-#endif // EIGEN_SPARSE_MODULE_H
-
+#endif  // EIGEN_SPARSE_MODULE_H
