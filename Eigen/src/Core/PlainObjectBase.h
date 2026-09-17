@@ -903,7 +903,9 @@ namespace internal {
 
 template <typename Derived, typename OtherDerived, bool IsVector>
 struct conservative_resize_like_impl {
-  static constexpr bool IsRelocatable = std::is_trivially_copyable<typename Derived::Scalar>::value;
+  // Fixed-max storage never reallocates, so keep the in-place path for any Scalar (as in 3.3).
+  static constexpr bool IsRelocatable =
+      std::is_trivially_copyable<typename Derived::Scalar>::value || Derived::MaxSizeAtCompileTime != Dynamic;
   static void run(DenseBase<Derived>& _this, Index rows, Index cols) {
     if (_this.rows() == rows && _this.cols() == cols) return;
     EIGEN_STATIC_ASSERT_DYNAMIC_SIZE(Derived)
