@@ -1,6 +1,6 @@
 module(
     name = "eigen",
-    version = "5.0.1.swiftnav.1",
+    version = "5.0.1.swiftnav.2",
 )
 
 bazel_dep(name = "bazel_skylib", version = "1.9.0")

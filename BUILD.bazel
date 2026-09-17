@@ -20,8 +20,15 @@ cc_library(
     defines = [
         "EIGEN_NO_DEBUG",
     ] + select({
-        "@rules_swiftnav//third_party:intel_mkl": ["EIGEN_USE_MKL_ALL"],
-        "@rules_swiftnav//third_party:_enable_mkl": ["EIGEN_USE_MKL_ALL"],
+        # Eigen >= 5.0 turns on MKL_DIRECT_CALL, which skips MKL argument checks.
+        "@rules_swiftnav//third_party:intel_mkl": [
+            "EIGEN_USE_MKL_ALL",
+            "EIGEN_MKL_NO_DIRECT_CALL",
+        ],
+        "@rules_swiftnav//third_party:_enable_mkl": [
+            "EIGEN_USE_MKL_ALL",
+            "EIGEN_MKL_NO_DIRECT_CALL",
+        ],
         "//conditions:default": [],
     }),
     includes = ["."],
