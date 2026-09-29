@@ -537,7 +537,8 @@ class DenseStorage : public internal::DenseStorage_impl<T, Size, Rows, Cols, Opt
   using Base = internal::DenseStorage_impl<T, Size, Rows, Cols, Options>;
 
  public:
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr DenseStorage() = default;
+  // User-provided so value-initialisation does not zero-fill the storage.
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr DenseStorage() {}
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr DenseStorage(const DenseStorage&) = default;
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr DenseStorage(Index size, Index rows, Index cols)
       : Base(size, rows, cols) {}
@@ -553,7 +554,8 @@ class DenseStorage<T, Size, Rows, Cols, Options, false>
   using Base = internal::DenseStorage_impl<T, Size, Rows, Cols, Options>;
 
  public:
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr DenseStorage() = default;
+  // User-provided so value-initialisation does not zero-fill the storage.
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr DenseStorage() {}
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr DenseStorage(const DenseStorage&) = default;
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr DenseStorage(Index size, Index rows, Index cols)
       : Base(size, rows, cols) {}
