@@ -120,10 +120,15 @@ class Array : public PlainObjectBase<Array<Scalar_, Rows_, Cols_, Options_, MaxR
    * is called a null matrix. This constructor is the unique way to create null matrices: resizing
    * a matrix to 0 is not supported.
    *
+   * Unless \c EIGEN_INITIALIZE_MATRICES_BY_ZERO or \c EIGEN_INITIALIZE_MATRICES_BY_NAN is defined, this constructor is
+   * defaulted, so value-initialization (<tt>Array a{{}};</tt>, <tt>Array()</tt>, or <tt>a()</tt> in a member
+   * initializer list) zero-initializes the whole object first, including the unused part of a fixed-maximum-size
+   * inline buffer. Default-initialization (<tt>Array a;</tt>) only default-initializes the coefficients.
+   *
    * \sa resize(Index,Index)
    */
 #ifdef EIGEN_INITIALIZE_COEFFS
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr Array() : Base() { EIGEN_INITIALIZE_COEFFS_IF_THAT_OPTION_IS_ENABLED }
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr Array() { EIGEN_INITIALIZE_COEFFS_IF_THAT_OPTION_IS_ENABLED }
 #else
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr Array() = default;
 #endif
