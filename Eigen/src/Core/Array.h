@@ -125,8 +125,7 @@ class Array : public PlainObjectBase<Array<Scalar_, Rows_, Cols_, Options_, MaxR
 #ifdef EIGEN_INITIALIZE_COEFFS
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr Array() : Base() { EIGEN_INITIALIZE_COEFFS_IF_THAT_OPTION_IS_ENABLED }
 #else
-  // User-provided so value-initialisation does not zero-fill the storage.
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr Array() {}
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr Array() = default;
 #endif
   /** \brief Move constructor */
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr Array(Array&&) = default;
