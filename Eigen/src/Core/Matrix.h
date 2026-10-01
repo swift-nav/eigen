@@ -246,13 +246,17 @@ class Matrix : public PlainObjectBase<Matrix<Scalar_, Rows_, Cols_, Options_, Ma
    * is called a null matrix. This constructor is the unique way to create null matrices: resizing
    * a matrix to 0 is not supported.
    *
+   * Unless \c EIGEN_INITIALIZE_MATRICES_BY_ZERO or \c EIGEN_INITIALIZE_MATRICES_BY_NAN is defined, this constructor is
+   * defaulted, so value-initialization (<tt>Matrix m{{}};</tt>, <tt>Matrix()</tt>, or <tt>m()</tt> in a member
+   * initializer list) zero-initializes the whole object first, including the unused part of a fixed-maximum-size
+   * inline buffer. Default-initialization (<tt>Matrix m;</tt>) only default-initializes the coefficients.
+   *
    * \sa resize(Index,Index)
    */
 #if defined(EIGEN_INITIALIZE_COEFFS)
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr Matrix() { EIGEN_INITIALIZE_COEFFS_IF_THAT_OPTION_IS_ENABLED }
 #else
-  // User-provided so value-initialisation does not zero-fill the storage.
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr Matrix() {}
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr Matrix() = default;
 #endif
   /** \brief Move constructor */
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr Matrix(Matrix&&) = default;
